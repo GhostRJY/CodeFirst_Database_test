@@ -1,17 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 using CodeFirst.Contexts;
+using System.ComponentModel.DataAnnotations;
 
 namespace CodeFirst.Models
 {
     public class Order
     {
+        [Key]
         public int Id { get; set; }
+
+        [Range(1, 100, ErrorMessage = "Недопустимое значение кол-ва!")]
         public int Count { get; set; }
 
+        [Required(ErrorMessage ="Заказчик должен быть указан в заказе!")]
         //один ко многим (один заказчик много заказов)
         public int UserId { get; set; } //внешний ключ заказчика
         public User? User { get; set; }
@@ -44,11 +45,12 @@ namespace CodeFirst.Models
         }
         public void AddOrder(in Order newOrder)
         {
-            using var context = new MarketPlaceDBContext();
-            var order = newOrder;
-            context.Orders?.Add(order);
-            context.SaveChanges();
-            Console.WriteLine($"Заказ {order.Count} добавлен!");
+            //переработать добавление заказа
+            //using var context = new MarketPlaceDBContext();
+            //var order = newOrder;
+            //context.Orders?.Add(order);
+            //context.SaveChanges();
+            //Console.WriteLine($"Заказ {order.Count} добавлен!");
         }
 
         public void UpdateOrder(int orderId, in Order newOrder)
@@ -79,4 +81,5 @@ namespace CodeFirst.Models
             Console.WriteLine($"Заказ с id {orderId} удален!");
         }
     }
+    
 }

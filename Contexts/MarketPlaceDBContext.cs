@@ -24,10 +24,30 @@ namespace CodeFirst.Contexts
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
+            //base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Category>().HasKey(c => c.Id);
+
+
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.Orders)
+                .WithOne(o => o.User)
+                .HasForeignKey(o => o.UserId); //связь user и order
+
+            modelBuilder.Entity<Product>()
+                .HasOne(p => p.Category)
+                .WithMany(c => c.Products)
+                .HasForeignKey(p => p.CategoryId); //связь product и category
+
+            modelBuilder.Entity<Category>()
+                .HasMany(c => c.Products)
+                .WithOne(p => p.Category)
+                .HasForeignKey(p => p.CategoryId); //связь category и product
+
 
             //связь product и order
-            modelBuilder.Entity<ProductToOrder>().HasKey(po => new { po.Product_id, po.Order_id }); //составной ключ
+            modelBuilder.Entity<ProductToOrder>()
+                .HasKey(po => new { po.Product_id, po.Order_id }); //составной ключ
 
             
             modelBuilder.Entity<ProductToOrder>()
@@ -52,6 +72,23 @@ namespace CodeFirst.Contexts
                 .HasOne(ur => ur.Review)
                 .WithMany(r => r.UserToReviews)
                 .HasForeignKey(ur => ur.Review_id);
+
+            modelBuilder.Entity<CategoriesOfProduct>(entity =>
+            {
+                entity.HasNoKey(); // убираем первичный ключ, так как это не таблица, а результат процедуры
+                //entity.ToFunction("GetCategoriesOfProduct"); // указываем, что это результат процедуры
+            });
+
+
+        }
+
+        
+
+        public void ResetDatabase()
+        {
+            Database.EnsureDeleted();
+            Database.EnsureCreated();
+            Console.WriteLine("База данных очищена и пересоздана.");
         }
     }
     

@@ -1,15 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 using CodeFirst.Contexts;
+using System.ComponentModel.DataAnnotations;
 
 namespace CodeFirst.Models
 {
     public class Review
     {
+        [Key]
         public int Id { get; set; }
+
+        [Required(ErrorMessage = "Нельзя оставить пустой отзыв")]
         public string? Text { get; set; }
 
         //Связь с Person
@@ -72,6 +72,21 @@ namespace CodeFirst.Models
             context.Reviews?.Remove(review);
             context.SaveChanges();
             Console.WriteLine($"Отзыв удален!");
+        }
+    }
+
+    //реализую строитель Review (Fluent API)
+    public class ReviewBuilder
+    {
+        private Review m_review = new Review();
+        public ReviewBuilder WithText(string text)
+        {
+            m_review.Text = text;
+            return this;
+        }
+        public Review Build()
+        {
+            return m_review;
         }
     }
 }
