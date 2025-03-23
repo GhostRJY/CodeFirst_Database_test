@@ -32,22 +32,26 @@ namespace CodeFirst.Models
     }
 
     public class PersonRepository
-    { 
-        public void GetAllUsers()
+    {
+        private readonly TestDBContext m_context;
+
+        public List<User> GetAllUsers()
         {
-            using var context = new MarketPlaceDBContext();
-            var users = context.Users?.Include(p => p.Orders).ToList();
+            //using var context = new MarketPlaceDBContext();
+            var users = m_context.Users?.Include(p => p.Orders).ToList();
 
             foreach(var person in users!)
             {
                 Console.WriteLine($"{person.Name} {person.Email}  кол-во заказов {person.Orders?.Count()}");                
             }
+
+            return users;
         }
 
         public void GetUserById(int id)
         {
-            using var context = new MarketPlaceDBContext();
-            var person = context.Users?.FirstOrDefault(p => p.Id == id);
+            //using var context = new MarketPlaceDBContext();
+            var person = m_context.Users?.FirstOrDefault(p => p.Id == id);
             if(person == null)
             {
                 Console.WriteLine($"Пользователь с id {id} не найден.");
@@ -58,19 +62,18 @@ namespace CodeFirst.Models
 
         public void AddUser(in User newUser)
         {
-            using var context = new MarketPlaceDBContext();
+            //using var context = new MarketPlaceDBContext();
             var user = newUser;
 
-
-            context.Users?.Add(user);
-            context.SaveChanges();
+            m_context.Users?.Add(user);
+            m_context.SaveChanges();
             Console.WriteLine($"Пользователь {user.Name} добавлен!");
         }
 
         public void UpdateUser(string? personName, in User updUser)
         {
-            using var context = new MarketPlaceDBContext();
-            var person = context.Users.FirstOrDefault(u => u.Name == personName);
+            //using var context = new MarketPlaceDBContext();
+            var person = m_context.Users.FirstOrDefault(u => u.Name == personName);
             if(person == null)
             {
                 Console.WriteLine($"Человек с именем {personName} не найден.");
@@ -82,22 +85,22 @@ namespace CodeFirst.Models
             //person.Email = updUser.Email;
             //person.Password = updUser.Password;
 
-            context.SaveChanges();
+            m_context.SaveChanges();
             Console.WriteLine($"Данные пользователя {personName} обновлены!");
         }
 
         public void DeleteUser(string personName)
         {
-            using var context = new MarketPlaceDBContext();
-            var person = context.Users.FirstOrDefault(u => u.Name == personName);
+            //using var context = new MarketPlaceDBContext();
+            var person = m_context.Users.FirstOrDefault(u => u.Name == personName);
             if(person == null)
             {
                 Console.WriteLine($"Человек с именем {personName} не найден.");
                 return;
             }
 
-            context.Users?.Remove(person);
-            context.SaveChanges();
+            m_context.Users?.Remove(person);
+            m_context.SaveChanges();
             Console.WriteLine($"Пользователь {personName} удален!");
         }
     }

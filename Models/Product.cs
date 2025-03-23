@@ -1,8 +1,6 @@
 ﻿
 using CodeFirst.Contexts;
-using System;
 using System.ComponentModel.DataAnnotations;
-using Microsoft.EntityFrameworkCore.SqlServer;
 using Microsoft.EntityFrameworkCore;
 
 namespace CodeFirst.Models
@@ -20,7 +18,7 @@ namespace CodeFirst.Models
         public int Count { get; set; }
 
         [Range(0, int.MaxValue, ErrorMessage = "Недопустимое значение цены товара!")]
-        public decimal Price { get; set; }
+        public double Price { get; set; }
 
         //реализую связь многие к одному (1 категория много товаров)
         //внешние ключи
@@ -42,12 +40,17 @@ namespace CodeFirst.Models
 
     public class ProductRepository
     {
-      
+        private readonly TestDBContext m_context;
+
+        public ProductRepository(TestDBContext context)
+        {
+            m_context = context ?? throw new ArgumentNullException(nameof(context));
+        }
 
         public void ExecStoredProcedure(in string procedureName)
         {
-            using var context = new MarketPlaceDBContext();
-            var caterories = context.Set<CategoriesOfProduct>()
+            
+            var caterories = m_context.Set<CategoriesOfProduct>()
                 .FromSqlRaw($"EXEC {procedureName}")  // вызов хранимой процедуры
                 .ToList();
 
@@ -55,36 +58,68 @@ namespace CodeFirst.Models
             {
                 Console.WriteLine($"{record.Name} категория: {record.CategoryName}");
             });
-
-
-
         }
 
        
-        public void GetAllProducts()
+        public List<Product> GetAllProducts()
         {
-            var context = new MarketPlaceDBContext();
-            var products = context.Products?.Include(c => c.Category);
+            //var context = new MarketPlaceDBContext();
+            var products = m_context.Products?.Include(c=>c.Category).ToList() ?? new List<Product>();
 
-            foreach(var product in products!)
+            foreach(var product in products)
             {
                 Console.WriteLine($"{product.Name} {product.Count} {product.Price} {product.Category?.Name}");
             }
+
+            return products;
         }
-        public void GetProductById(int id)
+
+
+        public List<Order> GetAllOrdersWithProducts()
         {
-            using var context = new MarketPlaceDBContext();
-            var product = context.Products?.FirstOrDefault(p => p.Id == id);
+            //var context = new MarketPlaceDBContext();
+            
+            var orders = m_context.Orders?.Include(u=>u.User).ToList();
+
+            foreach(var order in orders)
+            {
+                Console.WriteLine($"Заказ №{order.Id} от {order.User.Name}({order.User.Email})");
+                
+                //Explicit загрузка
+                m_context.Entry(order)
+                    .Collection(p => p.ProductToOrders)
+                    .Query().Include(p => p.Product)
+                    .ThenInclude(p => p.Category)
+                    .Load();
+
+                //товары в заказе
+                foreach(var productsInOrder in order.ProductToOrders)
+                {
+
+                    Console.WriteLine($"{productsInOrder.Product?.Name} ({productsInOrder.Product?.Category.Name})");
+                }
+            }
+
+            return orders;
+        }
+
+
+        public Product GetProductById(int id)
+        {
+            //using var context = new MarketPlaceDBContext();
+            var product = m_context.Products?.FirstOrDefault(p => p.Id == id);
             if(product == null)
             {
                 Console.WriteLine($"Товар с id {id} не найден.");
-                return;
+                return null;
             }
             Console.WriteLine($"{product.Name} {product.Count} {product.Price} {product.Category?.Name}");
+
+            return product;
         }
         public void AddProduct(in string name, in int count, in double price, in int categoryId )
         {
-            using var context = new MarketPlaceDBContext();
+            //using var context = new MarketPlaceDBContext();
             ProductBuilder productBuild = new ProductBuilder();
 
             var product = productBuild.SetName(name).SetCount(count).SetPrice(price).SetCategory(categoryId).Build();
@@ -104,15 +139,15 @@ namespace CodeFirst.Models
                 return;
             }
 
-            context.Products?.Add(product);
-            context.SaveChanges();
+            m_context.Products?.Add(product);
+            m_context.SaveChanges();
             Console.WriteLine($"Товар {product.Name} добавлен!");
         }
 
         public void UpdateProduct(string? productName, in Product newProduct)
         {
-            using var context = new MarketPlaceDBContext();
-            var product = context.Products?.FirstOrDefault(p => p.Name == productName);
+            //using var context = new MarketPlaceDBContext();
+            var product = m_context.Products?.FirstOrDefault(p => p.Name == productName);
             if(product == null)
             {
                 Console.WriteLine($"Товар {productName} не найден.");
@@ -121,23 +156,23 @@ namespace CodeFirst.Models
             product.Name = newProduct.Name;
             product.Count = newProduct.Count;
             product.Price = newProduct.Price;
-
             product.CategoryId = newProduct.CategoryId;
-            context.SaveChanges();
+
+            m_context.SaveChanges();
             Console.WriteLine($"Товар {productName} обновлен!");
         }
 
         public void DeleteProduct(int id)
         {
-            using var context = new MarketPlaceDBContext();
-            var product = context.Products?.FirstOrDefault(p => p.Id == id);
+            //using var context = new MarketPlaceDBContext();
+            var product = m_context.Products?.FirstOrDefault(p => p.Id == id);
             if(product == null)
             {
                 Console.WriteLine($"Товар с id {id} не найден.");
                 return;
             }
-            context.Products?.Remove(product);
-            context.SaveChanges();
+            m_context.Products?.Remove(product);
+            m_context.SaveChanges();
             Console.WriteLine($"Товар {product.Name} удален!");
         }
     }
@@ -155,7 +190,7 @@ namespace CodeFirst.Models
 
         public ProductBuilder SetPrice(double price)
         {
-            m_product.Price = (decimal)price;
+            m_product.Price = price;
             return this;
         }
 

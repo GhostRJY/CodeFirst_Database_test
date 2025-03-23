@@ -24,14 +24,23 @@ namespace CodeFirst.Models
 
     public class CategoryRepository
     {
-        public void GetAllCategories()
+
+        private readonly TestDBContext m_context;
+
+        public CategoryRepository(TestDBContext context)
         {
-            using var context = new MarketPlaceDBContext();
-            var categories = context.Categories?.ToList();
+            m_context = context ?? throw new ArgumentNullException(nameof(context));
+        }
+        public List<Category> GetAllCategories()
+        {
+            //using var context = new MarketPlaceDBContext();
+            var categories = m_context.Categories?.ToList();
             foreach(var category in categories!)
             {
                 Console.WriteLine($"{category.Name}");
             }
+
+            return categories;
         }
         public void GetCategoryById(int id)
         {
